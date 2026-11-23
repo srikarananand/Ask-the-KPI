@@ -1,0 +1,147 @@
+# Certified metric dictionary. A metric is the ONLY way a number reaches an answer.
+# The SQL below is fixed text reviewed by the metric owner; user input never enters SQL.
+# Each query returns (geo, year, value). Units, grain, caveats and golden tests travel with the metric.
+version: 1
+metrics:
+  - id: commercial_price
+    name: Average commercial electricity price
+    unit: "¢/kWh"
+    decimals: 2
+    entities: [state, region, national]
+    definition: Revenue from commercial customers divided by kWh sold to them, calendar year.
+    source: EIA Electric Power Monthly, retail sales (route electricity/retail-sales)
+    owner: FP&A analytics (example owner)
+    caveat: Statewide average; an individual site's tariff, demand charges and taxes will differ.
+    synonyms: [price, prices, rate, rates, cost per kwh, cents per kwh, per kilowatt hour, expensive, cheaper, pricier, more expensive, cheapest, priciest, tariff, how much does electricity cost]
+    sql: SELECT geo, year, price AS value FROM retail
+    golden:
+      - {geo: TX, year: 2025, value: 8.56}
+      - {geo: US, year: 2025, value: 13.37}
+      - {geo: CA, year: 2005, value: 11.92}
+
+  - id: commercial_sales
+    name: Commercial electricity sales
+    unit: "GWh"
+    decimals: 0
+    entities: [state, region, national]
+    definition: Electricity sold to commercial customers, million kWh (equal to GWh), calendar year.
+    source: EIA Electric Power Monthly, retail sales
+    owner: FP&A analytics (example owner)
+    caveat: Some states were reclassified between sectors in the history (for example MD and MA around 2009); read long trends with care.
+    synonyms: [sales, consumption, usage, use, demand, load, electricity sold, gwh, energy used, consume, consumed, kwh sold]
+    sql: SELECT geo, year, sales_mkwh AS value FROM retail
+    golden:
+      - {geo: TX, year: 2025, value: 174683}
+      - {geo: VA, year: 2019, value: 53981}
+
+  - id: commercial_spend
+    name: Total commercial electricity spend
+    unit: "$M"
+    decimals: 0
+    entities: [state, region, national]
+    definition: Average price multiplied by sales, expressed in millions of dollars.
+    source: Derived from EIA retail sales (price × sales ÷ 100)
+    owner: FP&A analytics (example owner)
+    caveat: Derived, not reported. Rounding of sales to whole GWh makes it approximate to about 0.01%.
+    synonyms: [spend, spending, bill, bills, total cost, expenditure, paid, pay, revenue, total electricity cost, how much do businesses pay]
+    sql: SELECT geo, year, price * sales_mkwh / 100.0 AS value FROM retail
+    golden:
+      - {geo: TX, year: 2025, value: 14952.865}
+
+  - id: price_yoy
+    name: Year-over-year change in commercial price
+    unit: "%"
+    decimals: 1
+    entities: [state, region, national]
+    definition: Percent change in the average commercial price versus the previous calendar year.
+    source: Derived from EIA retail sales
+    owner: FP&A analytics (example owner)
+    caveat: Single-year changes are noisy; compare against several years before drawing conclusions.
+    synonyms: [year over year, yoy, year-on-year, annual change, vs last year, versus last year, compared with last year, from the previous year]
+    sql: SELECT a.geo, a.year, (a.price / b.price - 1) * 100.0 AS value FROM retail a JOIN retail b ON a.geo = b.geo AND a.year = b.year + 1
+    golden:
+      - {geo: TX, year: 2025, value: 0.1169}
+
+  - id: price_vs_national
+    name: Commercial price premium or discount to the U.S. average
+    unit: "%"
+    decimals: 1
+    entities: [state, region]
+    definition: State (or region) average commercial price divided by the U.S. average for the same year, minus one.
+    source: Derived from EIA retail sales
+    owner: FP&A analytics (example owner)
+    caveat: Unweighted comparison of averages; says nothing about a portfolio's own mix of sites.
+    synonyms: [compared to the national, vs the national, above the national, below the national, relative to the us, premium to the us, vs the us average, than the national average, discount to the us, versus the national]
+    sql: SELECT a.geo, a.year, (a.price / u.price - 1) * 100.0 AS value FROM retail a JOIN retail u ON u.geo = 'US' AND u.year = a.year WHERE a.geo <> 'US'
+    golden:
+      - {geo: TX, year: 2025, value: -35.9760}
+
+  - id: budget_overrun_p90
+    name: 90th-percentile budget overrun (flat +3% rule)
+    unit: "%"
+    decimals: 1
+    entities: [state]
+    definition: 90th percentile of (actual − budget) ÷ budget over 16 budget years (2010–2025), budget set two years ahead with a flat +3%/yr escalator.
+    source: Electricity Cost-Risk Study (this author's backtest of EIA data)
+    owner: FP&A analytics (example owner)
+    caveat: Based on 16 observations per state and includes the 2022–23 price shock. Reported for the 2027 budget year only.
+    synonyms: [overrun, overruns, p90, budget risk, budget miss, risk of overrun, exceed budget, how risky, overrun risk]
+    sql: SELECT state AS geo, 2027 AS year, p90_overrun AS value FROM risk
+    golden:
+      - {geo: HI, year: 2027, value: 30.05}
+
+  - id: recommended_contingency
+    name: Recommended contingency for the 2027 budget
+    unit: "%"
+    decimals: 1
+    entities: [state]
+    definition: The larger of the state's P90 overrun and the pooled 51-state P90 (6.9%).
+    source: Electricity Cost-Risk Study
+    owner: FP&A analytics (example owner)
+    caveat: A planning input, not a forecast. Sized on the flat-escalator backtest, not on the EIA outlook itself.
+    synonyms: [contingency, buffer, reserve, cushion, contingency percent]
+    sql: SELECT state AS geo, 2027 AS year, contingency_pct AS value FROM risk
+    golden:
+      - {geo: TX, year: 2027, value: 6.93}
+
+  - id: base_case_price_2027
+    name: 2027 base-case commercial price
+    unit: "¢/kWh"
+    decimals: 2
+    entities: [state]
+    definition: State 2025 actual price scaled by EIA's Short-Term Energy Outlook growth for the state's census division, 2025 to 2027.
+    source: EIA Short-Term Energy Outlook (series ESCMU_*) applied to EIA retail sales
+    owner: FP&A analytics (example owner)
+    caveat: A forecast. EIA forecasts nine divisions, so each state inherits its division's growth. The outlook was not backtested against its own past vintages.
+    synonyms: [base case, 2027 base case, budget price for 2027, forecast price, expected price, 2027 forecast, 2027 price, projected price]
+    sql: SELECT state AS geo, 2027 AS year, base_2027 AS value FROM risk
+    golden:
+      - {geo: TX, year: 2027, value: 8.979}
+
+  - id: high_case_price_2027
+    name: 2027 high-case commercial price
+    unit: "¢/kWh"
+    decimals: 2
+    entities: [state]
+    definition: Base case × (1 + recommended contingency).
+    source: Electricity Cost-Risk Study
+    owner: FP&A analytics (example owner)
+    caveat: A stress case for budgeting, not a prediction.
+    synonyms: [high case, 2027 high, upper case, stress case, worst case price, high-case]
+    sql: SELECT state AS geo, 2027 AS year, high_case_2027 AS value FROM risk
+    golden:
+      - {geo: HI, year: 2027, value: 50.782}
+
+  - id: outlook_growth
+    name: EIA outlook growth in price, 2025 to 2027
+    unit: "%"
+    decimals: 1
+    entities: [state]
+    definition: Percent growth in the commercial price for the state's census division between 2025 and 2027 in EIA's outlook.
+    source: EIA Short-Term Energy Outlook
+    owner: FP&A analytics (example owner)
+    caveat: A forecast at division level; every state in a division shows the same value.
+    synonyms: [steo growth, forecast growth, expected growth, growth through 2027, outlook growth, outlook, projected growth]
+    sql: SELECT state AS geo, 2027 AS year, steo_growth_pct AS value FROM risk
+    golden:
+      - {geo: TX, year: 2027, value: 4.896}
