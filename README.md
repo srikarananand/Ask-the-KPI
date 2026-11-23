@@ -2,6 +2,8 @@
 
 **Report:** `docs/index.html` (static, answer-first, with the evaluation scorecard and real transcripts).
 
+**Where this started:** the EIA research assistant from my Research Analyst internship at the Hamm Institute for American Energy at Oklahoma State University (2025). This project takes the same EIA data and asks what an AI assistant needs so that finance teams can trust its numbers: certified metrics and a measured evaluation.
+
 ## The answer
 
 A language model should choose a certified metric, never write the number. On 115 questions written after the router was frozen, this design answered 90.1% of answerable questions correctly (73 of 81, 95% interval 82–95%), declined 96.3% of out-of-scope or ambiguous questions (26 of 27) and gave 4 confidently wrong answers (3.5%). All four were vocabulary or grain errors, and the report breaks every miss down by cause.
