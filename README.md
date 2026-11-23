@@ -2,7 +2,7 @@
 
 **Report:** `docs/index.html` (static, answer-first, with the evaluation scorecard and real transcripts).
 
-**Where this started:** the EIA research assistant from my Research Analyst internship at the Hamm Institute for American Energy at Oklahoma State University (2025). This project takes the same EIA data and asks what an AI assistant needs so that finance teams can trust its numbers: certified metrics and a measured evaluation.
+**Where this started:** the EIA research assistant. The idea came from my Research Analyst internship at the Hamm Institute for American Energy at Oklahoma State University (2025). I built the assistant as a course project for Agentic AI Systems at Oklahoma State (April 2026), then took the same EIA data and asked what an AI assistant needs so that finance teams can trust its numbers: certified metrics and a measured evaluation.
 
 ## The answer
 
