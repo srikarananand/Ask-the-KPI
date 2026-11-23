@@ -104,7 +104,7 @@ class Engine:
     def run(self, mid, op, geos=(), year=None, year2=None, n=None):
         err = self.validate(mid, op, geos, year, year2, n)
         if err:
-            return Answer(False, mid, op, error=err)
+            return Answer(False, mid, op, certified=False, error=err)
         m = self.dict[mid]
         f = self.frame(mid)
         lo, hi = self.years(mid)
@@ -115,6 +115,7 @@ class Engine:
             if lo != hi:
                 notes.append(f"No year given; used the latest available ({hi}).")
         unit = m["unit"]
+        sp = "" if unit == "%" else " "
 
         def val(g, y):
             r = f[(f.geo == g) & (f.year == y)]
@@ -127,9 +128,9 @@ class Engine:
         if op == "value":
             v = val(geos[0], year)
             if v is None:
-                return Answer(False, mid, op, error=f"no data for {G.name(geos[0])} in {year}")
+                return Answer(False, mid, op, certified=False, error=f"no data for {G.name(geos[0])} in {year}")
             rows = [dict(geo=geos[0], year=year, value=round(v, 6))]
-            text = f"{m['name']} in {G.name(geos[0])}, {year}: {fmt(v)} {unit}."
+            text = f"{m['name']} in {G.name(geos[0])}, {year}: {fmt(v)}{sp}{unit}."
         elif op in ("top_n", "bottom_n"):
             s = f[(f.year == year) & (f.kind == "state")].sort_values("value", ascending=(op == "bottom_n")).head(int(n))
             rows = [dict(geo=r.geo, year=year, value=round(r.value, 6)) for r in s.itertuples()]
@@ -139,10 +140,10 @@ class Engine:
         elif op == "compare":
             a, b = val(geos[0], year), val(geos[1], year)
             if a is None or b is None:
-                return Answer(False, mid, op, error="no data for one of the geographies")
+                return Answer(False, mid, op, certified=False, error="no data for one of the geographies")
             rows = [dict(geo=geos[0], year=year, value=round(a, 6)), dict(geo=geos[1], year=year, value=round(b, 6))]
-            text = (f"{m['name']}, {year}: {G.name(geos[0])} {fmt(a)} {unit} vs {G.name(geos[1])} {fmt(b)} {unit} "
-                    f"(difference {fmt(abs(a - b))} {unit}).")
+            text = (f"{m['name']}, {year}: {G.name(geos[0])} {fmt(a)}{sp}{unit} vs {G.name(geos[1])} {fmt(b)}{sp}{unit} "
+                    f"(difference {fmt(abs(a - b))}{sp}{unit}).")
         elif op == "series":
             s = f[f.geo == geos[0]].sort_values("year")
             if year is not None:
@@ -155,7 +156,7 @@ class Engine:
         elif op in ("change", "cagr"):
             a, b = val(geos[0], year), val(geos[0], year2)
             if a is None or b is None or a == 0:
-                return Answer(False, mid, op, error="no data for one of the years")
+                return Answer(False, mid, op, certified=False, error="no data for one of the years")
             if unit == "%":
                 diff = b - a
                 rows = [dict(geo=geos[0], year=year, value=round(a, 6)), dict(geo=geos[0], year=year2, value=round(b, 6))]
@@ -165,11 +166,11 @@ class Engine:
                 pct = (b / a - 1) * 100
                 rows = [dict(geo=geos[0], year=year, value=round(a, 6)), dict(geo=geos[0], year=year2, value=round(b, 6)),
                         dict(geo=geos[0], year=f"{year}-{year2}", value=round(pct, 6))]
-                text = (f"{m['name']} in {G.name(geos[0])} went from {fmt(a)} to {fmt(b)} {unit} between {year} and {year2}, "
+                text = (f"{m['name']} in {G.name(geos[0])} went from {fmt(a)} to {fmt(b)}{sp}{unit} between {year} and {year2}, "
                         f"a change of {pct:+.1f}%.")
             else:
                 c = ((b / a) ** (1 / (year2 - year)) - 1) * 100
                 rows = [dict(geo=geos[0], year=f"{year}-{year2}", value=round(c, 6))]
                 text = (f"{m['name']} in {G.name(geos[0])} grew at a compound annual rate of {c:.1f}% "
-                        f"between {year} and {year2} ({fmt(a)} to {fmt(b)} {unit}).")
+                        f"between {year} and {year2} ({fmt(a)} to {fmt(b)}{sp}{unit}).")
         return Answer(True, mid, op, text, rows, unit, True, notes, m["caveat"], m["source"])

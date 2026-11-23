@@ -61,6 +61,9 @@ class Assistant:
                 if not a.ok:
                     out.update(status="refuse", reason="no_data", text=f"Can't answer that: {a.error}.")
                 else:
+                    geo_s = ", ".join(G.name(g) for g in r.geos) or "all states"
+                    yrs = f"{r.year}" + (f"–{r.year2}" if r.year2 else "") if r.year else "latest available"
+                    out.update(interpretation=f"{self.engine.dict[r.metric]['name']} · {r.op} · {geo_s} · {yrs}")
                     out.update(status="answer", text=a.text, rows=a.rows, unit=a.unit, notes=a.notes,
                                caveat=a.caveat, source=a.source, metric=a.metric, op=a.op)
         return out
