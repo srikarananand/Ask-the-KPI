@@ -40,8 +40,8 @@ OTHER_TOPICS = (r"\b(generation|generating|solar|wind|coal|nuclear|natural gas|g
                 r"battery|storage|transmission|stock|stocks|crypto|bitcoin)\b")
 ADVICE = r"\b(should (we|i) (hedge|invest|buy|sign|switch|lock|build|install|move|relocate|open)|recommend (a|an|the)? ?(hedge|contract|supplier|provider)|which supplier|which provider|investment advice|financial advice)\b"
 CAUSAL = r"\b(why|what caused|what drove|what is driving|reason for|because of|explain (the )?(rise|increase|drop|spike|jump|decline))\b"
-DEFINE = r"\b(how (is|are|do you|does).{0,40}(defined|calculated|computed|measured|derived)|definition of|what does .{0,40} mean|explain how|how .{0,30} calculated)\b"
-LIST = r"\b(what|which) (metrics|kpis|measures)\b|\blist (the |all )?(metrics|kpis)\b|\bavailable (metrics|kpis)\b|\bwhat can you (answer|tell|do)\b|\bwhat (data|questions)\b"
+DEFINE = r"(\b(how (is|are|do you|does).{0,40}(defined|calculated|computed|measured|derived)|definition of|what does .{0,40} mean|what do you mean by|meaning of|explain how|how .{0,30} calculated)\b|^\s*(please )?define\b)"
+LIST = r"\b(what|which) (metrics|kpis|measures)\b|\blist (the |all )?(metrics|kpis)\b|\bavailable (metrics|kpis)\b|\blist of (the )?(kpis|metrics)\b|\b(kpis|metrics|measures) you (support|have|offer|provide)\b|\bshow me (the )?(kpis|metrics)\b|\bwhat can you (answer|tell|do)\b|\bwhat (data|questions)\b"
 FUTURE = r"\b(20(2[89]|[3-9]\d)|next decade|in (5|five|10|ten) years|long[- ]term forecast|by 2030|by 2035|2050)\b"
 
 TOP_WORDS = r"\b(top|highest|most expensive|priciest|largest|biggest|greatest|worst|most)\b"
@@ -126,6 +126,9 @@ class RuleRouter:
         if not scores:
             return Route("refuse", reason="no_matching_certified_metric")
         # 4. metric selection
+        BASE = {"commercial_price", "commercial_sales", "commercial_spend"}
+        if any(k not in BASE for k in scores):          # "price" is a generic word inside specific metric names
+            scores = {k: v for k, v in scores.items() if k not in BASE or v >= 3}
         ranked = sorted(scores, key=lambda k: (-scores[k], PRIORITY.index(k)))
         top = ranked[0]
         if len(ranked) > 1 and ((scores[ranked[0]] >= 3 and scores[ranked[1]] >= 3) or scores[ranked[0]] == scores[ranked[1]]):
@@ -157,6 +160,8 @@ class RuleRouter:
         if year and year2 and year > year2:
             year, year2 = year2, year
 
+        if (_has(TOP_WORDS, low) or _has(BOTTOM_WORDS, low)) and _has(r"\b(regions?|divisions?)\b", low) and not geos:
+            return Route("clarify", reason="ranking_is_states_only", metric=top)
         if _has(TOP_WORDS, low) and not geos:
             op, n = "top_n", self._n(low)
         elif _has(BOTTOM_WORDS, low) and not geos:

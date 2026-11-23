@@ -27,6 +27,9 @@ ALL = {**STATES, **REGIONS, **NATIONAL}
 # full-name match exists, and never matched inside a sentence in these cases
 AMBIGUOUS_CODES = {"IN", "OR", "ME", "OK", "HI", "ID", "US", "DE", "LA", "MA", "AS", "OH"}
 
+LOWER_OK = {"TX", "CA", "NY", "FL", "NJ", "WA", "GA", "NC", "SC", "VA", "WI", "MN", "AZ", "TN", "KY", "UT",
+            "NV", "NM", "KS", "CT", "RI", "NH", "VT", "ND", "SD", "WY", "AK", "AR", "IA", "MS", "MT", "WV", "NE"}
+
 _ALIASES = {
     "U.S.": "US", "united states": "US", "national": "US", "nationwide": "US",
     "the nation": "US", "usa": "US", "america": "US", "u.s": "US",
@@ -69,6 +72,13 @@ def find_geos(text):
         code = m.group(1)
         s, e = m.span()
         if code in STATES and code not in AMBIGUOUS_CODES and not any(not (e <= a or s >= b) for a, b in taken):
+            taken.append((s, e))
+            hits.append((s, e, code))
+    # lowercase codes ("tx commercial price") for codes that are not ordinary words
+    for m in re.finditer(r"(?<![A-Za-z])([a-z]{2})(?![A-Za-z])", text):
+        code = m.group(1).upper()
+        s, e = m.span()
+        if code in STATES and code in LOWER_OK and not any(not (e <= a or s >= b) for a, b in taken):
             taken.append((s, e))
             hits.append((s, e, code))
     hits.sort()

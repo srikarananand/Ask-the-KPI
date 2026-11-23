@@ -23,6 +23,7 @@ CLARIFY_TEXT = {
     "compare_two_at_a_time": "I can compare two geographies at a time. Which two?",
     "one_geography_at_a_time": "Please pick one geography for that question.",
     "use_top_n_for_many_states": "For many states, ask for the top or bottom N (for example, the five highest).",
+    "ranking_is_states_only": "Rankings are by state only. Ask for the top or bottom states, or name a region to look up.",
     "which_metric_to_define": "Which metric do you want defined?",
 }
 

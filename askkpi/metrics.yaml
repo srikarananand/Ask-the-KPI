@@ -12,7 +12,7 @@ metrics:
     source: EIA Electric Power Monthly, retail sales (route electricity/retail-sales)
     owner: FP&A analytics (example owner)
     caveat: Statewide average; an individual site's tariff, demand charges and taxes will differ.
-    synonyms: [price, prices, rate, rates, cost per kwh, cents per kwh, per kilowatt hour, expensive, cheaper, pricier, more expensive, cheapest, priciest, tariff, how much does electricity cost]
+    synonyms: [price, prices, rate, rates, pay per kwh, paid per kwh, per kwh, cost per kwh, cents per kwh, per kilowatt hour, expensive, cheaper, pricier, more expensive, cheapest, priciest, tariff, how much does electricity cost]
     sql: SELECT geo, year, price AS value FROM retail
     golden:
       - {geo: TX, year: 2025, value: 8.56}
@@ -141,7 +141,7 @@ metrics:
     source: EIA Short-Term Energy Outlook
     owner: FP&A analytics (example owner)
     caveat: A forecast at division level; every state in a division shows the same value.
-    synonyms: [steo growth, forecast growth, expected growth, growth through 2027, outlook growth, outlook, projected growth]
+    synonyms: [eia project, eia projects, eia projection, steo growth, forecast growth, expected growth, growth through 2027, outlook growth, outlook, projected growth]
     sql: SELECT state AS geo, 2027 AS year, steo_growth_pct AS value FROM risk
     golden:
       - {geo: TX, year: 2027, value: 4.896}
